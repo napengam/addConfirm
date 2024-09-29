@@ -16,9 +16,13 @@ function addConfirm(other = null) {
         // We keep a referenc to the original element and make this one
         // disapear and replace the origin with the clone  instead.
         // 
+        if (typeof elem.clonedFromOrigin !== 'undefined') {
+            return; // avoid cloning a clone
+        }
         let clone = elem.cloneNode(true);
         clone.elemOnclick = elem.onclick;
         elem.onclick = '';
+        clone.onclick='';
         clone.clonedFromOrigin = elem;
         clone.clonedFromOriginParent = elem.parentNode;
         elem.replaceWith(clone);
