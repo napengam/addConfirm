@@ -6,13 +6,20 @@ Add modal confirm dialogs in hindsite
   
 ### NOTE:  
 
-The solution described here is probably not the recommended way to deploy confirmation  
-dialogs. You should think about this upfront during the analysis/design phase of your application.
+While deploying confirmation dialogs should ideally be planned during the design 
+and analysis phase of application development, sometimes legacy code presents
+unique challenges.
 
-I came up with this  *workaround* when confronted with a clients legacy code,  littered  
-with user interactions that deserved a confirmation. Rewriting the code would take to long and  
-would further 'spaghettize' the given code, so here you go.
+In one such scenario, I encountered a client’s legacy system heavily interspersed
+with user interactions that warranted confirmation prompts. Refactoring the 
+codebase would have been time-consuming and risked further complicating 
+the already tangled code structure.
 
+To avoid introducing additional complexity and \"spaghettifying\" the code, I 
+devised the following workaround to implement confirmation dialogs in a 
+minimally invasive way. Though it may not be the most elegant long-term 
+solution, it provides an efficient stopgap for managing user confirmations 
+without a complete overhaul.
 
 
 <br> 
