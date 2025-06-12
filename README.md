@@ -1,25 +1,14 @@
-# addConfirm
-Add modal confirm dialogs in hindsite
 
 ## A working demo is located at  <a href='https://hgsweb.de/addConfirm/'> https://hgsweb.de/addConfirm/</a>  
   
-  
 ### NOTE:  
 
-While deploying confirmation dialogs should ideally be planned during the design 
-and analysis phase of application development, sometimes legacy code presents
-unique challenges.
+The solution described here is probably not the recommended way to deploy confirmation  
+dialogs. You should think about this upfront during the analysis/design phase of your application.
 
-In one such scenario, I encountered a client’s legacy system heavily interspersed
-with user interactions that warranted confirmation prompts. Refactoring the 
-codebase would have been time-consuming and risked further complicating 
-the already tangled code structure.
-
-To avoid introducing additional complexity and \"spaghettifying\" the code, I 
-devised the following workaround to implement confirmation dialogs in a 
-minimally invasive way. Though it may not be the most elegant long-term 
-solution, it provides an efficient stopgap for managing user confirmations 
-without a complete overhaul.
+I came up with this  *workoaround* when confronted with a clients legacy code,  littered  
+with user interactions that deserved a confirmation. Rewriting the code would take to long and  
+would further 'spaghettize' the given code, so here you go.
 
 
 <br> 
@@ -53,9 +42,13 @@ Add:
 
 ## High level of how it works:  
   
-Within ```addConfirm()``` all elements with a class need-confirm will be located and substituted by their clones.
-Such a clone will capture the 'onclick' event and delegate it first to the confirm dialog of your choice.
-If the confirmation is positiv/yes the 'onclick' event is fired again but this time the event is delegate to the original
-node, that has the reference to the action to be executed.
+- Binds a capture-phase click listener on each matching element.
+- Prevents default behavior, stops propagation.
+- Shows the confirmation dialog.
+- If user clicks "Yes":
+Temporarily disables the interceptor.
+Redispatches the original click event to trigger native behavior.
+Re-enables the interceptor.
+- If user clicks "No": closes the dialog silently.
 
 For more details and explanation pleas look add teh sources for ```addConfirm().js``` 
