@@ -1,5 +1,9 @@
 # addConfirm() Utility
 
+# Demo
+
+Demo at https://hgsweb.de/addConfirm/
+
 ## Overview
 
 `addConfirm()` is a lightweight JavaScript utility that attaches confirmation dialogs to elements before executing their original actions.  
