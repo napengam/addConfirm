@@ -1,73 +1,139 @@
+function addConfirm(options = {}) {
+    // Mapping common event types to correct constructors
+    const EVENT_CONSTRUCTOR_MAP = {
+        click: MouseEvent,
+        mousedown: MouseEvent,
+        mouseup: MouseEvent,
+        keyup: KeyboardEvent,
+        keydown: KeyboardEvent,
+        keypress: KeyboardEvent,
+        focus: FocusEvent,
+        blur: FocusEvent,
+        change: Event,
+        input: Event,
+        submit: Event
+    };
 
-function addConfirm(selector = '.need-confirm') {
-    let elements = document.querySelectorAll(selector);
-    let currentTarget = null, dialog, yesBtn, noBtn;
+    // --- Singleton guard ---
+    if (addConfirm._instance) {
+        return addConfirm._instance;
+    }
 
-    elements.forEach(el => {
-        if (el.dataset.confirmBound === 'true') {
+    // --- Default configuration ---
+    const defaults = {
+        selector: '.need-confirm',
+        events: ['click', 'change'],
+        confirmFn: (msg, yes, no) => {
+            if (window.confirm(msg)) {
+                yes();
+            } else {
+                no();
+            }
+        },
+        closeFn: () => {}
+    };
+
+    const config = Object.assign({}, defaults, options);
+    const { selector, events, confirmFn, closeFn } = config;
+
+    // --- Internal state ---
+    let currentTarget = null;
+    let currentEventType = null;
+    const bypassMap = new WeakMap();
+
+    // --- Helper: safely get element value ---
+    function getElementValue(el) {
+        if ('value' in el) {
+            return el.value;
+        }
+        if (el.textContent && el.textContent.trim()) {
+            return el.textContent.trim();
+        }
+        return null;
+    }
+
+    // --- Delegated event handler ---
+    function handler(e) {
+        const el = e.target.closest(selector);
+        if (!el) {
             return;
         }
-        el.dataset.confirmBound = 'true';
-        el.addEventListener('click', function (e) {
 
-            if (e.target.dataset.confirmBound === 'false') {
-                return;
-            }
-            e.target.dataset.confirmBound = 'true';
-            // Intercept click
-            e.preventDefault();
-            e.stopPropagation();
-
-            // Set current target for confirm dialog
-            currentTarget = el;
-
-
-            openDialog();
-            
-        }, true); // capture = true
-    });
-    
-    function openDialog() {
-        // *****************************************
-        // you might need to adapt this to the dialogs
-        // you are using. This is just an example. 
-        // ******************************************
-
-        dialog = document.getElementById('confirm');
-        dialog.showModal();
-        yesBtn = dialog.querySelector('#cyes');
-        noBtn = dialog.querySelector('#cno');
-        yesBtn.onclick = yes;
-        noBtn.onclick = no;
-    }
-
-    function yes() {
-        yesBtn.onclick = noBtn.onclick = null;
-        if (!currentTarget)
+        const master = el.dataset.master || 'click';
+        if (master !== e.type) {
             return;
+        }
 
-        // Temporarily unbind interceptor to avoid recursion
-        currentTarget.dataset.confirmBound = 'false';
+        if (bypassMap.has(el)) {
+            bypassMap.delete(el);
+            return;
+        }
 
-        // Redispatch original click
-        const event = new MouseEvent('click', {
+        e.preventDefault();
+        e.stopPropagation();
+
+        currentTarget = el;
+        currentEventType = e.type;
+
+        const ask = el.dataset.ask || 'Sicher ?';
+        confirmFn(ask, onYes, onNo);
+    }
+
+    // --- Confirmation accepted ---
+    function onYes() {
+        if (!currentTarget) {
+            closeFn();
+            return;
+        }
+
+        bypassMap.set(currentTarget, true);
+
+        const evtType = currentEventType || 'click';
+        const EventConstructor = EVENT_CONSTRUCTOR_MAP[evtType] || Event;
+
+        // Redispatch original event
+        const evt = new EventConstructor(evtType, {
             bubbles: true,
-            cancelable: true,
-            view: window
+            cancelable: true
         });
-        currentTarget.dispatchEvent(event);
+        currentTarget.dispatchEvent(evt);
 
-        // Rebind after dispatch
-        currentTarget.dataset.confirmBound = 'true';
-        dialog.close();
-        currentTarget = null;
-    }
-    ;
+        // Emit custom yeschange event
+        const val = getElementValue(currentTarget);
+        currentTarget.dispatchEvent(
+            new CustomEvent('yeschange', {
+                bubbles: true,
+                detail: { value: val, type: evtType }
+            })
+        );
 
-    function no() {
-        yesBtn.onclick = noBtn.onclick = null;
-        dialog.close();
+        closeFn();
         currentTarget = null;
+        currentEventType = null;
     }
-    ;
+
+    // --- Confirmation cancelled ---
+    function onNo() {
+        if (currentTarget) {
+            const val = getElementValue(currentTarget);
+            currentTarget.dispatchEvent(
+                new CustomEvent('nochange', {
+                    bubbles: true,
+                    detail: { value: val, type: currentEventType }
+                })
+            );
+        }
+        closeFn();
+        currentTarget = null;
+        currentEventType = null;
+    }
+
+    // --- Register handlers globally ---
+    for (const type of events) {
+        document.body.addEventListener(type, handler, true);
+    }
+
+    // --- Store singleton instance ---
+    addConfirm._instance = { handler };
+    return addConfirm._instance;
 }
