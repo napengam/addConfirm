@@ -151,7 +151,7 @@ function addConfirm(options = {}) {
             new CustomEvent('yeschange', { bubbles: true, detail: { value: val, type: evtType } })
         );
         cleanup();
-        console.log('confirm yes');
+      
     }
 
     // --- Confirmation cancelled ---
@@ -163,7 +163,7 @@ function addConfirm(options = {}) {
             );
         }
         cleanup();
-        console.log('confirm no');
+      
     }
 
     // --- Cleanup helper ---
