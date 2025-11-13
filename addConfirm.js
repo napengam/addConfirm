@@ -1,3 +1,4 @@
+export { addConfirm };
 /**
  * Adds confirmation logic to elements.
  * Shows a confirmation dialog only if the value has actually changed.
@@ -42,11 +43,12 @@ function addConfirm(options = {}) {
                 no();
             }
         },
-        closeFn: () => {},
+        closeFn: () => {
+        },
     };
 
     const config = Object.assign({}, defaults, options);
-    const { selector, events, confirmFn, closeFn } = config;
+    const {selector, events, confirmFn, closeFn} = config;
 
     // --- Internal state ---
     let currentTarget = null;
@@ -120,11 +122,13 @@ function addConfirm(options = {}) {
             bypassMap.delete(el);
             return;
         }
-        const prevValue = initialValueMap.get(el);
-        const currentValue = getElementValue(el);
-        // Skip confirmation if value didn't change
-        if (String(prevValue) === String(currentValue)) {
-            return;
+        if (master === 'change') {
+            const prevValue = initialValueMap.get(el);
+            const currentValue = getElementValue(el);
+            // Skip confirmation if value didn't change
+            if (String(prevValue) === String(currentValue)) {
+                return;
+            }
         }
         e.preventDefault();
         e.stopPropagation();
@@ -144,14 +148,15 @@ function addConfirm(options = {}) {
         const evtType = currentEventType || 'click';
         const EventConstructor = EVENT_CONSTRUCTOR_MAP[evtType] || Event;
         // Redispatch original event
-        const evt = new EventConstructor(evtType, { bubbles: true, cancelable: true });
+        const evt = new EventConstructor(evtType, {bubbles: true, cancelable: true});
         currentTarget.dispatchEvent(evt);
+
         const val = getElementValue(currentTarget);
         currentTarget.dispatchEvent(
-            new CustomEvent('yeschange', { bubbles: true, detail: { value: val, type: evtType } })
-        );
+                new CustomEvent('yeschange', {bubbles: true, detail: {value: val, type: evtType}})
+                );
         cleanup();
-      
+
     }
 
     // --- Confirmation cancelled ---
@@ -159,16 +164,16 @@ function addConfirm(options = {}) {
         if (currentTarget) {
             const val = getElementValue(currentTarget);
             currentTarget.dispatchEvent(
-                new CustomEvent('nochange', { bubbles: true, detail: { value: val, type: currentEventType } })
-            );
+                    new CustomEvent('nochange', {bubbles: true, detail: {value: val, type: currentEventType}})
+                    );
         }
         cleanup();
-      
+
     }
 
     // --- Cleanup helper ---
     function cleanup() {
-        closeFn();
+        // closeFn();
         currentTarget = null;
         currentEventType = null;
     }
@@ -178,6 +183,6 @@ function addConfirm(options = {}) {
         document.body.addEventListener(type, handler, true);
     }
 
-    addConfirm._instance = { handler };
+    addConfirm._instance = {handler};
     return addConfirm._instance;
 }
