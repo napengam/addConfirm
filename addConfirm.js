@@ -23,28 +23,30 @@ function addConfirm(options = {}) {
         blur: FocusEvent,
         change: Event,
         input: Event,
-        submit: Event
+        submit: Event,
     };
+
     // --- Singleton guard ---
-    if (addConfirm._instance)
+    if (addConfirm._instance) {
         return addConfirm._instance;
+    }
 
     // --- Default configuration ---
     const defaults = {
         selector: '.need-confirm',
         events: ['click', 'change'],
         confirmFn: (msg, yes, no) => {
-            if (window.confirm(msg))
+            if (window.confirm(msg)) {
                 yes();
-            else
+            } else {
                 no();
+            }
         },
-        closeFn: () => {
-        }
+        closeFn: () => {},
     };
 
     const config = Object.assign({}, defaults, options);
-    const {selector, events, confirmFn, closeFn} = config;
+    const { selector, events, confirmFn, closeFn } = config;
 
     // --- Internal state ---
     let currentTarget = null;
@@ -54,41 +56,42 @@ function addConfirm(options = {}) {
 
     // --- Helper: get element value/state ---
     function getElementValue(el) {
-        if (!el)
+        if (!el) {
             return null;
-
+        }
         if (el.type === 'checkbox' || el.type === 'radio') {
             return el.checked;
         }
-
         if (el.tagName === 'SELECT') {
             if (el.multiple) {
                 return Array.from(el.selectedOptions).map(o => o.value).join(',');
+            } else {
+                return el.value;
             }
-            return el.value;
         }
-
         if ('value' in el) {
             return el.value;
         }
-
         if (el.isContentEditable || (el.textContent && el.textContent.trim())) {
             return el.textContent.trim();
         }
-
         return null;
     }
 
-    // --- Helper: check if element is interactable ---
+    // --- Helper: check if element can be interacted with ---
     function isInteractable(el) {
-        if (!el)
+        if (!el) {
             return false;
-        if (el.disabled)
+        }
+        if (el.disabled) {
             return false;
-        if (el.readOnly)
+        }
+        if (el.readOnly) {
             return false;
-        if (el.getAttribute('aria-disabled') === 'true')
+        }
+        if (el.getAttribute('aria-disabled') === 'true') {
             return false;
+        }
         return true;
     }
 
@@ -106,32 +109,28 @@ function addConfirm(options = {}) {
     // --- Delegated confirm handler ---
     function handler(e) {
         const el = e.target.closest(selector);
-        if (!el || !isInteractable(el))
+        if (!el || !isInteractable(el)) {
             return;
-
+        }
         const master = el.dataset.master || 'click';
-        if (master !== e.type)
+        if (master !== e.type) {
             return;
-
+        }
         if (bypassMap.has(el)) {
             bypassMap.delete(el);
             return;
         }
-
         const prevValue = initialValueMap.get(el);
         const currentValue = getElementValue(el);
-
         // Skip confirmation if value didn't change
-        if (String(prevValue) === String(currentValue))
+        if (String(prevValue) === String(currentValue)) {
             return;
-
+        }
         e.preventDefault();
         e.stopPropagation();
-
         currentTarget = el;
         currentEventType = e.type;
-
-        const ask = el.dataset.ask || 'Sicher?';
+        const ask = el.dataset.ask || 'Are you sure?';
         confirmFn(ask, onYes, onNo);
     }
 
@@ -141,21 +140,16 @@ function addConfirm(options = {}) {
             closeFn();
             return;
         }
-
         bypassMap.set(currentTarget, true);
-
         const evtType = currentEventType || 'click';
         const EventConstructor = EVENT_CONSTRUCTOR_MAP[evtType] || Event;
-
         // Redispatch original event
-        const evt = new EventConstructor(evtType, {bubbles: true, cancelable: true});
+        const evt = new EventConstructor(evtType, { bubbles: true, cancelable: true });
         currentTarget.dispatchEvent(evt);
-
         const val = getElementValue(currentTarget);
         currentTarget.dispatchEvent(
-                new CustomEvent('yeschange', {bubbles: true, detail: {value: val, type: evtType}})
-                );
-
+            new CustomEvent('yeschange', { bubbles: true, detail: { value: val, type: evtType } })
+        );
         cleanup();
         console.log('confirm yes');
     }
@@ -165,8 +159,8 @@ function addConfirm(options = {}) {
         if (currentTarget) {
             const val = getElementValue(currentTarget);
             currentTarget.dispatchEvent(
-                    new CustomEvent('nochange', {bubbles: true, detail: {value: val, type: currentEventType}})
-                    );
+                new CustomEvent('nochange', { bubbles: true, detail: { value: val, type: currentEventType } })
+            );
         }
         cleanup();
         console.log('confirm no');
@@ -184,6 +178,6 @@ function addConfirm(options = {}) {
         document.body.addEventListener(type, handler, true);
     }
 
-    addConfirm._instance = {handler};
+    addConfirm._instance = { handler };
     return addConfirm._instance;
 }
